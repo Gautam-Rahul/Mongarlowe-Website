@@ -6,6 +6,7 @@ const path = require('path');
 const config = require('./config/config');
 const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+require('dotenv').config();
 
 // Debug logging
 console.log('Starting server...');
@@ -15,6 +16,12 @@ try {
   // Set environment variables from config
   Object.keys(config).forEach(key => {
     process.env[key] = config[key];
+  });
+
+  console.log('Environment variables set:', {
+    JWT_SECRET: process.env.JWT_SECRET ? '[EXISTS]' : '[MISSING]',
+    JWT_EXPIRY: process.env.JWT_EXPIRY,
+    MONGODB_URI: process.env.MONGODB_URI ? '[EXISTS]' : '[MISSING]'
   });
 
   // Connect to database
@@ -45,6 +52,7 @@ try {
     app.use('/api/users', require('./routes/userRoutes'));
     app.use('/api/products', require('./routes/productRoutes'));
     app.use('/api/orders', require('./routes/orderRoutes'));
+    app.use('/api/payments', require('./routes/paymentRoutes'));
 
     // API test route
     app.get('/api', (req, res) => {
@@ -62,6 +70,9 @@ try {
         res.send('API is running...');
       });
     }
+
+    // Special route handling for Stripe webhook
+    app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
     // Error handling middleware
     app.use(notFound);
